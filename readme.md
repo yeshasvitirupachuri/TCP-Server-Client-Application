@@ -1,8 +1,8 @@
 ### Code Progress
 
-- [ ] Create a new C++ application : [tcp_test_application](./tcp_test_application)
-- [ ] Add initial CMake to build the original files
-- [ ] Run the original test application
+- [x] Create a new C++ application : [tcp_test_application](./tcp_test_application)
+- [x] Add initial CMake to build the original files
+- [x] Run the original test application
 - [ ] Address the TODOs of the server code
 - [ ] Write a simple command line client application that connects to the server, sends a message and disconnects
 - [ ] Add the tcp client application to the project build
