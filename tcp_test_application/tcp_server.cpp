@@ -91,17 +91,14 @@ void tcp_server::accept_connection() {
 
     std::cout << "[info] accepted connection from: " << client_ip << std::endl;
 
-    // NOTE:: Who is going to make the connect call, server or client ?
-
-    // todo: check for dead connection and go back to listening for new ones
-
+    // check for dead connection and go back to listening for new ones
     int size = MTU_SIZE;
 
     while (size > 0){
 
         // On successfull read, recv() function returns lenght of incoming messages in bytes
         // NOTE: Double check if the flag needs to be MSG_WAITFORONE
-        int size = recv(client_handle, data, MTU_SIZE, MSG_WAITFORONE);
+        size = recv(client_handle, data, MTU_SIZE, MSG_WAITFORONE);
 
         // Process the incoming data on successcul read
         if (size != -1 && size != 0){
@@ -112,14 +109,6 @@ void tcp_server::accept_connection() {
 
 //---------------------------------------------------------------------------------------------------------------------
 tcp_server::~tcp_server(){
-
-    // Shutdown client
-    while(client_ip != "" && shutdown(client_handle, SHUT_RDWR) < 0)
-    {
-        std::cout << "[info] shutting down client ... " << std::endl;
-    }
-
-    std::cout << "[info] shotdown client" << std::endl;
 
     // Shutdown server
     while(socket_handle != 0 && shutdown(socket_handle, SHUT_RDWR) < 0)
