@@ -3,17 +3,19 @@
 
 #include <string>
 #include <netinet/in.h>
+#include <poll.h>
+#include <vector>
 
 #define MTU_SIZE 1200
 
 class tcp_server {
 
     public:
+
         tcp_server(int port);
        ~tcp_server();
-        
-        void accept_connection();
 
+        void accept_connection();
 
     private:
         int socket_handle{0}; // Zero initialization, server_handle is more meaningful name
@@ -24,6 +26,8 @@ class tcp_server {
         std::string client_ip;
         char data[MTU_SIZE];
 
+        //NOTE: Check for other efficient ds to handle the socket fds
+        std::vector<struct pollfd> poll_fds_vec;
 };
 
 #endif // TCP_SERVER_HPP

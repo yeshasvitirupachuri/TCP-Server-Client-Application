@@ -13,6 +13,9 @@
 // Reference : https://pubs.opengroup.org/onlinepubs/9699919799/
 // search for socket.h
 
+#define POLLING_TIMEOUT_MS 100
+#define MAX_CLIENT_CONN 100
+
 using namespace std;
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -21,10 +24,6 @@ tcp_server::tcp_server(int port) {
     std::cout << "[info] server initialization in progress ... " << std::endl;
 
     socket_handle = socket(AF_INET, SOCK_STREAM, 0);
-
-    // Change the server socket to be non-blocking
-    // Ref: http://www.cs.tau.ac.il/~eddiea/samples/Non-Blocking/tcp-nonblocking-server.c.html
-    fcntl(socket_handle, F_SETFL, O_NONBLOCK);
 
     // Check status of server socket fd
     if (socket_handle == 0)
@@ -58,53 +57,72 @@ tcp_server::tcp_server(int port) {
         return;
     }
 
-    // Check for errors
-    // TODO: Change backlog option to have multiple client connections
-    if(listen(socket_handle, 1) == -1)
+    // Change backlog option to have multiple client connections
+    if(listen(socket_handle, MAX_CLIENT_CONN) == -1)
     {
         std::cerr << "[error] server socket at port " << port << " failed to start listening!" << std::endl;
         return;
     }
 
-    // todo: handle errors of this constructor
+    // Initialize poll fd with server socket
+    struct pollfd poll_fd{socket_handle, POLLIN, 0};
+    poll_fds_vec.push_back(std::move(poll_fd));
+
     std::cout << "[info] server initialization done successfully ... " << std::endl;
     std::cout << "[info] server socket port : " << port << std::endl;
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 void tcp_server::accept_connection() {
-    
-    // Initialize client socket fd from client address
-    socklen_t client_socket_size = sizeof(client_address);
 
-    // Blocking call of accept() when connections are empty and O_NONBLOCK (default : false)
-    client_handle = accept(socket_handle, (struct sockaddr*)&client_address, &client_socket_size);
+    int n = poll(poll_fds_vec.data(), poll_fds_vec.size(), POLLING_TIMEOUT_MS);
 
-    // Check the client socket fd initialization for the connected client address
-    if(client_handle == -1)
-    {
-        //std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
-        return;
-    }
+    //TODO: Check and drop for inactive connections
+    for (int i = 0; i < poll_fds_vec.size(); i++) {
 
-    client_ip = inet_ntoa(client_address.sin_addr);
+        // Lister to server socket for new connections
+        if (i == 0) {
+            if (poll_fds_vec[0].revents & POLLIN)
+            {
+                // Initialize client socket fd from client address
+                socklen_t client_socket_size = sizeof(client_address);
 
-    std::cout << "[info] accepted connection from: " << client_ip << std::endl;
+                // Blocking call of accept() when connections are empty and O_NONBLOCK (default : false)
+                client_handle = accept(socket_handle, (struct sockaddr*)&client_address, &client_socket_size);
 
-    // check for dead connection and go back to listening for new ones
-    int size = MTU_SIZE;
+                // Check the client socket fd initialization for the connected client address
+                if(client_handle == -1)
+                {
+                    std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
+                    return;
+                }
 
-    while (size > 0){
+                // Initialize poll fd with client socket
+                struct pollfd poll_fd{client_handle, POLLIN, 0};
+                poll_fds_vec.push_back(std::move(poll_fd));
 
-        // On successfull read, recv() function returns lenght of incoming messages in bytes
-        // NOTE: Double check if the flag needs to be MSG_WAITFORONE
-        size = recv(client_handle, data, MTU_SIZE, MSG_WAITFORONE);
+                client_ip = inet_ntoa(client_address.sin_addr);
 
-        // Process the incoming data on successcul read
-        if (size != -1 && size != 0){
-            std::cout << std::string(data) << std::endl;
+                std::cout << "[info] accepted connection from: " << client_ip << std::endl;
+
+            }
+        }
+
+        // Listen to client sockets for incoming data
+        else if (poll_fds_vec[i].revents & POLLIN)
+        {
+            // Clear data buffer
+            memset(data, 0, sizeof(data));
+
+            int size = recv(poll_fds_vec[i].fd, data, MTU_SIZE, 0);
+
+            // Process the incoming data on successful read
+            if (size != -1 && size != 0){
+                std::cout << std::string(data) << std::endl;
+            }
         }
     }
+
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -116,7 +134,7 @@ tcp_server::~tcp_server(){
         std::cout << "[info] shutting down server ... " << std::endl;
     }
 
-    std::cout << "[info] shotdown server" << std::endl;
+    std::cout << "[info] server terminated ... " << std::endl;
 
     // Clear server and client socket handles
     socket_handle = 0;
