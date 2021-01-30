@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <unistd.h>
 
 // Ref: https://pubs.opengroup.org/onlinepubs/9699919799/functions/fcntl.html
 #include<fcntl.h>
@@ -133,6 +134,9 @@ tcp_server::~tcp_server(){
     {
         std::cout << "[info] shutting down server ... " << std::endl;
     }
+
+    // Closing server socket handle
+    close(socket_handle);
 
     std::cout << "[info] server terminated ... " << std::endl;
 
