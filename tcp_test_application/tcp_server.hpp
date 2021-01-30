@@ -16,10 +16,10 @@ class tcp_server {
 
 
     private:
-        int socket_handle{0}; // Zero initialization
+        int socket_handle{0}; // Zero initialization, server_handle is more meaningful name
         struct sockaddr_in server_address;
 
-        int client_handle{0};
+        int client_handle{0}; // Zero initialization
         struct sockaddr_in client_address;
         std::string client_ip;
         char data[MTU_SIZE];

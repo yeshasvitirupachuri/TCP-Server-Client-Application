@@ -67,16 +67,35 @@ tcp_server::tcp_server(int port) {
 //---------------------------------------------------------------------------------------------------------------------
 void tcp_server::accept_connection() {
     
+    // Initialize client socket fd from client address
     socklen_t client_socket_size = sizeof(client_address);
-    client_handle = accept(socket_handle, (struct sockaddr*)&client_address, &client_socket_size); 
+    client_handle = accept(socket_handle, (struct sockaddr*)&client_address, &client_socket_size);
+
+    // Check the client socket fd initialization for the connected client address
+    if(client_handle == -1)
+    {
+        std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
+        return;
+    }
+
     client_ip = inet_ntoa(client_address.sin_addr);
 
     std::cout << "[info] accepted connection from: " << client_ip << std::endl;
 
+    // NOTE:: Who is going to make the connect call, server or client ?
+
     // todo: check for dead connection and go back to listening for new ones
-    while (true){
-        int status = recv(client_handle, data, MTU_SIZE, 0);
-        if (status != -1 && status != 0){
+
+    int size = MTU_SIZE;
+
+    while (size > 0){
+
+        // On successfull read, recv() function returns lenght of incoming messages in bytes
+        // NOTE: Double check if the flag needs to be MSG_WAITFORONE
+        int size = recv(client_handle, data, MTU_SIZE, MSG_WAITFORONE);
+
+        // Process the incoming data on successcul read
+        if (size != -1 && size != 0){
             std::cout << std::string(data) << std::endl;
         }
     }
@@ -85,5 +104,8 @@ void tcp_server::accept_connection() {
 
 //---------------------------------------------------------------------------------------------------------------------
 tcp_server::~tcp_server(){
-    // todo: clean up
+
+    // Clear server and client socket handles
+    socket_handle = 0;
+    client_handle = 0;
 }
