@@ -121,6 +121,7 @@ int main(int argc, char *argv[]){
             while(!term && (sigaction(SIGINT, &sa, NULL) != -1))
             {
                 userMsg.clear();
+                clientMsg.clear();
                 cout << "Write message to server : ";
 
                 getline(cin, userMsg);
