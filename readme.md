@@ -5,7 +5,7 @@
 - [x] Run the original test application
 - [x] Address the TODOs of the server code
 - [x] Write a simple command line client application that connects to the server, sends a message and disconnects
-- [ ] Add the tcp client application to the project build
+- [x] Add the tcp client application to the project build
 - [ ] Update server to handle multiple clients through multi-threading
 - [ ] Understand how to use docker related part of the test
 
