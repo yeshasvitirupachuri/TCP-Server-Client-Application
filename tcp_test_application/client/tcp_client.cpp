@@ -30,6 +30,24 @@ static void signal_handler(int sig)
     }
 }
 
+enum class ClientMode
+{
+    SINGLE_PING = 0,
+    USER_INPUT,
+};
+
+static void sendMsg(int& socket, std::string& msg)
+{
+    int size = 0;
+    while ( size < strlen(msg.c_str()) ){
+
+        // On successfull send, the function returns number of bytes sendgetline(cin, userMsg);
+        // NOTE: Double check if the flag needs to be MSG_WAITFORONE
+        size = send(socket, msg.c_str(), strlen(msg.c_str()), MSG_WAITFORONE);
+    }
+
+}
+
 // Reference: https://www.geeksforgeeks.org/socket-programming-cc/
 // Used fo cleanup of client application
 
@@ -46,12 +64,25 @@ int main(int argc, char *argv[]){
     int server_port = SERVER_PORT;
     if (argc < 2)
     {
-        std::cout << "Using default server port " << server_port << std::endl;
+        std::cout << "[info] using default server port " << server_port << std::endl;
     }
     else
     {
         server_port = atoi(argv[1]);
-        std::cout << "Using server port " << server_port << std::endl;
+        std::cout << "[info] using server port " << server_port << std::endl;
+    }
+
+    // Check for client mode from input arguments, assuming succeded by port number argument
+    ClientMode client_mode = ClientMode::SINGLE_PING;
+
+    if (argc == 3 && atoi(argv[2]) == 1)
+    {
+        client_mode = ClientMode::USER_INPUT;
+        std::cout << "[info] using client in user input mode" << std::endl;
+    }
+    else
+    {
+        std::cout << "[info] using client in single ping message mode" << std::endl;
     }
 
     int client_handle = socket(AF_INET, SOCK_STREAM, 0);
@@ -76,27 +107,35 @@ int main(int argc, char *argv[]){
         return -1;
     }
 
-    std::string userMsg;
     std::string clientMsg;
-    while(!term && (sigaction(SIGINT, &sa, NULL) != -1))
-    {
-        userMsg.clear();
-        cout << "Write message to server : ";
-
-        getline(cin, userMsg);
-
-        if (userMsg.size() != 0)
+    switch (client_mode) {
+        case ClientMode::SINGLE_PING:
         {
-            clientMsg = "Client message : " + userMsg;
+            clientMsg = "Client message : Hello server ... ";
+            sendMsg(client_handle, clientMsg);
+            break;
         }
+        case ClientMode::USER_INPUT:
+        {
+            std::string userMsg;
+            while(!term && (sigaction(SIGINT, &sa, NULL) != -1))
+            {
+                userMsg.clear();
+                cout << "Write message to server : ";
 
-        int size = 0;
-        while ( size < strlen(clientMsg.c_str()) ){
+                getline(cin, userMsg);
 
-            // On successfull send, the function returns number of bytes sendgetline(cin, userMsg);
-            // NOTE: Double check if the flag needs to be MSG_WAITFORONE
-            size = send(client_handle, clientMsg.c_str(), strlen(clientMsg.c_str()), MSG_WAITFORONE);
+                if (userMsg.size() != 0)
+                {
+                    clientMsg = "Client message : " + userMsg;
+                }
+
+                sendMsg(client_handle, clientMsg);
         }
+        break;
+    }
+    default:
+        break;
     }
 
     // Shutdown client
