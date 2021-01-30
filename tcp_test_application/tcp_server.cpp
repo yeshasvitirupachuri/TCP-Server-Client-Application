@@ -4,6 +4,9 @@
 #include <vector>
 #include <cstring>
 
+// Ref: https://pubs.opengroup.org/onlinepubs/9699919799/functions/fcntl.html
+#include<fcntl.h>
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
@@ -69,6 +72,8 @@ void tcp_server::accept_connection() {
     
     // Initialize client socket fd from client address
     socklen_t client_socket_size = sizeof(client_address);
+
+    // Blocking call of accept() when connections are empty and O_NONBLOCK (default : false)
     client_handle = accept(socket_handle, (struct sockaddr*)&client_address, &client_socket_size);
 
     // Check the client socket fd initialization for the connected client address
@@ -77,6 +82,8 @@ void tcp_server::accept_connection() {
         std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
         return;
     }
+
+    // Make the client socket non blocking
 
     client_ip = inet_ntoa(client_address.sin_addr);
 
@@ -99,11 +106,26 @@ void tcp_server::accept_connection() {
             std::cout << std::string(data) << std::endl;
         }
     }
-
 }
 
 //---------------------------------------------------------------------------------------------------------------------
 tcp_server::~tcp_server(){
+
+    // Shutdown client
+    while(client_handle != 0 && shutdown(client_handle, SHUT_RDWR) < 0)
+    {
+        std::cout << "[info] shutting down client ... " << std::endl;
+    }
+
+    std::cout << "[info] shotdown client" << std::endl;
+
+    // Shutdown server
+    while(socket_handle != 0 && shutdown(socket_handle, SHUT_RDWR) < 0)
+    {
+        std::cout << "[info] shutting down server ... " << std::endl;
+    }
+
+    std::cout << "[info] shotdown server" << std::endl;
 
     // Clear server and client socket handles
     socket_handle = 0;
