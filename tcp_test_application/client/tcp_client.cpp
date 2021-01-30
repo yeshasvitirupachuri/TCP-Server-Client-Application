@@ -64,7 +64,7 @@ int main(int argc, char** argv){
     {
         userMsg.clear();
         cout << "Write message to server : ";
-        std::cin >> userMsg;
+        getline(cin, userMsg);
         std::string msg = "Client message : " + userMsg;
 
         int size = 0;
