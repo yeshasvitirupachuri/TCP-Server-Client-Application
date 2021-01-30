@@ -33,7 +33,7 @@ static void signal_handler(int sig)
 // Reference: https://www.geeksforgeeks.org/socket-programming-cc/
 // Used fo cleanup of client application
 
-int main(int argc, char** argv){
+int main(int argc, char *argv[]){
 
     // Ref: https://stackoverflow.com/questions/19140892/strange-sigaction-and-getline-interaction
     // Ref: https://www.gnu.org/software/libc/manual/html_node/Sigaction-Function-Example.html
@@ -42,7 +42,17 @@ int main(int argc, char** argv){
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
 
-    // TODO: Handle server and client port numbes from input arguments
+    // Check for server port number from input arguments
+    int server_port = SERVER_PORT;
+    if (argc < 2)
+    {
+        std::cout << "Using default server port " << server_port << std::endl;
+    }
+    else
+    {
+        server_port = atoi(argv[1]);
+        std::cout << "Using server port " << server_port << std::endl;
+    }
 
     int client_handle = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -57,12 +67,12 @@ int main(int argc, char** argv){
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_address.sin_port = htons(SERVER_PORT);
+    server_address.sin_port = htons(server_port);
 
     // Connect to server, and send messages
     if(connect(client_handle, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
     {
-        std::cerr << "[error] failed to connect client port to server port " << SERVER_PORT << std::endl;
+        std::cerr << "[error] failed to connect client port to server port " << server_port << std::endl;
         return -1;
     }
 
