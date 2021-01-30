@@ -103,7 +103,7 @@ void tcp_server::accept_connection() {
 
                 client_ip = inet_ntoa(client_address.sin_addr);
 
-                std::cout << "[info] accepted connection from: " << client_ip << std::endl;
+                std::cout << "[info] accepted connection from: " << client_ip << " port " << ntohs(client_address.sin_port) << std::endl;
 
             }
         }
