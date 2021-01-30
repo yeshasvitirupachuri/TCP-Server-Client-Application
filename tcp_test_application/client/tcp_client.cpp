@@ -55,7 +55,8 @@ int main(int argc, char** argv){
     // Connect to server, and send messages
     if(connect(client_handle, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)
     {
-        std::cerr << "[warning] failed to connect client port to server port " << SERVER_PORT << std::endl;
+        std::cerr << "[error] failed to connect client port to server port " << SERVER_PORT << std::endl;
+        return -1;
     }
 
     std::string userMsg;

@@ -27,7 +27,8 @@ int main(int argc, char** argv){
 
     while (!term){
 
-        // todo: fix this function to repeatedly accept new connections
+        // Add polling to repeatedly accept new connections
+        // Ref: https://stackoverflow.com/questions/19557941/implementing-poll-on-a-tcp-servers-read-write
         server->accept_connection();
          
     }
