@@ -1,9 +1,10 @@
 #include <iostream>
-#include <csignal>
+#include <signal.h>
 #include <memory>
 #include <vector>
 #include <cstring>
 #include <string.h>
+#include <unistd.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -18,10 +19,9 @@ using namespace std;
 
 static bool term = false;
 
-void signal_handler(int sig)
+static void signal_handler(int sig)
 {
     switch (sig) {
-
         case SIGINT:
             term = true;
             break;
@@ -34,6 +34,13 @@ void signal_handler(int sig)
 // Used fo cleanup of client application
 
 int main(int argc, char** argv){
+
+    // Ref: https://stackoverflow.com/questions/19140892/strange-sigaction-and-getline-interaction
+    // Ref: https://www.gnu.org/software/libc/manual/html_node/Sigaction-Function-Example.html
+    struct sigaction sa;
+    sa.sa_handler = signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
 
     // TODO: Handle server and client port numbes from input arguments
 
@@ -60,21 +67,38 @@ int main(int argc, char** argv){
     }
 
     std::string userMsg;
-    while(!term)
+    std::string clientMsg;
+    while(!term && (sigaction(SIGINT, &sa, NULL) != -1))
     {
         userMsg.clear();
         cout << "Write message to server : ";
+
         getline(cin, userMsg);
-        std::string msg = "Client message : " + userMsg;
+
+        if (userMsg.size() != 0)
+        {
+            clientMsg = "Client message : " + userMsg;
+        }
 
         int size = 0;
-        while ( size < strlen(msg.c_str()) ){
+        while ( size < strlen(clientMsg.c_str()) ){
 
-            // On successfull send, the function returns number of bytes send
+            // On successfull send, the function returns number of bytes sendgetline(cin, userMsg);
             // NOTE: Double check if the flag needs to be MSG_WAITFORONE
-            size = send(client_handle, msg.c_str(), strlen(msg.c_str()), MSG_WAITFORONE);
+            size = send(client_handle, clientMsg.c_str(), strlen(clientMsg.c_str()), MSG_WAITFORONE);
         }
     }
+
+    // Shutdown client
+    while(client_handle != 0 && ( shutdown(client_handle, SHUT_RDWR) == -1) )
+    {
+        std::cout << "[info] shutting down client ... " << std::endl;
+    }
+
+    // Close client socket handle
+    close(client_handle);
+
+    std::cout << "[info] client terminated ... " << std::endl;
 
     return 0;
 }
