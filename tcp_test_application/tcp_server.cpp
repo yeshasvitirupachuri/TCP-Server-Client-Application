@@ -22,6 +22,10 @@ tcp_server::tcp_server(int port) {
 
     socket_handle = socket(AF_INET, SOCK_STREAM, 0);
 
+    // Change the server socket to be non-blocking
+    // Ref: http://www.cs.tau.ac.il/~eddiea/samples/Non-Blocking/tcp-nonblocking-server.c.html
+    fcntl(socket_handle, F_SETFL, O_NONBLOCK);
+
     // Check status of server socket fd
     if (socket_handle == 0)
     {
@@ -79,11 +83,9 @@ void tcp_server::accept_connection() {
     // Check the client socket fd initialization for the connected client address
     if(client_handle == -1)
     {
-        std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
+        //std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
         return;
     }
-
-    // Make the client socket non blocking
 
     client_ip = inet_ntoa(client_address.sin_addr);
 
@@ -112,7 +114,7 @@ void tcp_server::accept_connection() {
 tcp_server::~tcp_server(){
 
     // Shutdown client
-    while(client_handle != 0 && shutdown(client_handle, SHUT_RDWR) < 0)
+    while(client_ip != "" && shutdown(client_handle, SHUT_RDWR) < 0)
     {
         std::cout << "[info] shutting down client ... " << std::endl;
     }
