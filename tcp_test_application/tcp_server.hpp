@@ -16,7 +16,7 @@ class tcp_server {
 
 
     private:
-        int socket_handle{0};
+        int socket_handle{0}; // Zero initialization
         struct sockaddr_in server_address;
 
         int client_handle{0};
@@ -25,11 +25,5 @@ class tcp_server {
         char data[MTU_SIZE];
 
 };
-
-
-
-
-
-
 
 #endif // TCP_SERVER_HPP
