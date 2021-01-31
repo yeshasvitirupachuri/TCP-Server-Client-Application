@@ -6,7 +6,8 @@
 - [x] Address the TODOs of the server code
 - [x] Write a simple command line client application that connects to the server, sends a message and disconnects
 - [x] Add the tcp client application to the project build
-- [ ] Update server to handle multiple clients through multi-threading
+- [x] Update server to handle multiple clients
+- [x] Update server to cleanup dead connections
 - [ ] Understand how to use docker related part of the test
 
 ### Original Instructions
