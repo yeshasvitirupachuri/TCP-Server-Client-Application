@@ -8,6 +8,7 @@
 - [x] Add the tcp client application to the project build
 - [x] Update server to handle multiple clients
 - [x] Update server to cleanup dead connections
+- [x] Add test bash script to run multiple clients
 - [ ] Understand how to use docker related part of the test
 
 ### Original Instructions
