@@ -145,6 +145,10 @@ void tcp_server::accept_connection() {
             if (size != -1 && size != 0){
                 auto it = connections_map.find(poll_fds_vec[i].fd);
                 std::cout << "[" << it->second.first << "] "<< std::string(data) << std::endl;
+
+                // Send reply to client
+                std::string ack = "ACK Client [" + it->second.first + "] ";
+                send(poll_fds_vec[i].fd, ack.c_str(), strlen(ack.c_str()), MSG_WAITFORONE);
             }
         }
     }

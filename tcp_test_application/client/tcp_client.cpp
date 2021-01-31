@@ -48,6 +48,18 @@ static void sendMsg(int& socket, std::string& msg)
 
 }
 
+static bool readMsg(int& socket, char* buf)
+{
+    //Read reply from server
+    memset(buf, 0, 256);
+    if (!term && read(socket, buf, 256) == -1)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 // Reference: https://www.geeksforgeeks.org/socket-programming-cc/
 // Used fo cleanup of client application
 
@@ -108,11 +120,21 @@ int main(int argc, char *argv[]){
     }
 
     std::string msg;
+    char buffer[1024];
     switch (client_mode) {
         case ClientMode::SINGLE_PING:
         {
             msg = "Hello server ... ";
             sendMsg(client_handle, msg);
+            // Read reply from server
+            if (!readMsg(client_handle, buffer))
+            {
+                std::cout << "[warning] failed to read reply from server" << std::endl;
+            }
+            else
+            {
+                std::cout << buffer << std::endl;
+            }
             break;
         }
         case ClientMode::USER_INPUT:
@@ -128,6 +150,16 @@ int main(int argc, char *argv[]){
                 {
                     sendMsg(client_handle, msg);
                 }
+
+                // Read reply from server
+                if (!readMsg(client_handle, buffer))
+                {
+                    std::cout << "[warning] failed to read reply from server" << std::endl;
+                    continue;
+                }
+
+                std::cout << buffer << std::endl;
+
         }
         break;
     }
