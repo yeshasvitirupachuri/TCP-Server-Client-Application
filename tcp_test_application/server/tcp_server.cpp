@@ -230,10 +230,12 @@ tcp_server::~tcp_server(){
 
     if (init_status)
     {
-        // Shutdown server
-        while(socket_handle != 0 && shutdown(socket_handle, SHUT_RDWR) < 0)
+        // Close all socket handles
+        auto it = poll_fds_vec.end();
+        while(it != poll_fds_vec.begin())
         {
-            std::cout << "[info] shutting down server ... " << std::endl;
+            close(it->fd);
+            it--;
         }
 
         // Closing server socket handle

@@ -167,12 +167,6 @@ int main(int argc, char *argv[]){
         break;
     }
 
-    // Shutdown client
-    while(client_handle != 0 && ( shutdown(client_handle, SHUT_RDWR) == -1) )
-    {
-        std::cout << "[info] shutting down client ... " << std::endl;
-    }
-
     // Close client socket handle
     close(client_handle);
 
