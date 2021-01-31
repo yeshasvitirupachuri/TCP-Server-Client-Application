@@ -107,31 +107,27 @@ int main(int argc, char *argv[]){
         return -1;
     }
 
-    std::string clientMsg;
+    std::string msg;
     switch (client_mode) {
         case ClientMode::SINGLE_PING:
         {
-            clientMsg = "Client message : Hello server ... ";
-            sendMsg(client_handle, clientMsg);
+            msg = "Hello server ... ";
+            sendMsg(client_handle, msg);
             break;
         }
         case ClientMode::USER_INPUT:
         {
-            std::string userMsg;
             while(!term && (sigaction(SIGINT, &sa, NULL) != -1))
             {
-                userMsg.clear();
-                clientMsg.clear();
+                msg.clear();
                 cout << "Write message to server : ";
 
-                getline(cin, userMsg);
+                getline(cin, msg);
 
-                if (userMsg.size() != 0)
+                if (msg.size() != 0)
                 {
-                    clientMsg = "Client message : " + userMsg;
+                    sendMsg(client_handle, msg);
                 }
-
-                sendMsg(client_handle, clientMsg);
         }
         break;
     }
