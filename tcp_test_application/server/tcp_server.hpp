@@ -15,9 +15,12 @@ class tcp_server {
         tcp_server(int port);
        ~tcp_server();
 
+        bool get_init_status();
         void accept_connection();
 
     private:
+
+        bool init_status;
         int socket_handle{0}; // Zero initialization, server_handle is more meaningful name
         struct sockaddr_in server_address;
 
