@@ -143,7 +143,8 @@ void tcp_server::accept_connection() {
 
             // Process the incoming data on successful read
             if (size != -1 && size != 0){
-                std::cout << std::string(data) << std::endl;
+                auto it = connections_map.find(poll_fds_vec[i].fd);
+                std::cout << "[" << it->second.first << "] "<< std::string(data) << std::endl;
             }
         }
     }
