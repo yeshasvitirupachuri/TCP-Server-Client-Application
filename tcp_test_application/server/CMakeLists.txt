@@ -1,1 +1,4 @@
-add_executable(tcp_server main.cpp tcp_server.cpp tcp_server.hpp)
+set(PROJECT_NAME "tcp_server")
+
+add_executable(${PROJECT_NAME} main.cpp tcp_server.cpp tcp_server.hpp)
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_NAME_DIR})
