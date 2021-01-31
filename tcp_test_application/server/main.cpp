@@ -21,6 +21,12 @@ int main(int argc, char** argv){
 
     tcp_server* server = new tcp_server(SERVER_PORT);
 
+    // Check server initialization
+    if(!server->get_init_status())
+    {
+        return -1;
+    }
+
     // catch SIGINT to stop the server gracefully
     struct sigaction sa;
     sa.sa_handler = signal_handler;

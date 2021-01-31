@@ -19,10 +19,18 @@
 
 using namespace std;
 
+bool tcp_server::get_init_status()
+{
+    return this->init_status;
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 tcp_server::tcp_server(int port) {
 
     std::cout << "[info] server initialization in progress ... " << std::endl;
+
+    // Set initialization default status
+    init_status = true;
 
     socket_handle = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -30,6 +38,7 @@ tcp_server::tcp_server(int port) {
     if (socket_handle == 0)
     {
         std::cerr << "[error] server socket initialization failed!" << std::endl;
+        init_status = false;
         return;
     }
 
@@ -41,6 +50,7 @@ tcp_server::tcp_server(int port) {
     if( setsockopt(socket_handle, SOL_SOCKET, options[1], (char*)&options, sizeof(options)) == -1)
     {
         std::cerr << "[error] server socket options configuration failed!" << std::endl;
+        init_status = false;
         return;
     }
 
@@ -55,6 +65,7 @@ tcp_server::tcp_server(int port) {
     if( bind(socket_handle, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
     {
         std::cerr << "[error] server socket binding failed to port " << port << std::endl;
+        init_status = false;
         return;
     }
 
@@ -62,6 +73,7 @@ tcp_server::tcp_server(int port) {
     if(listen(socket_handle, MAX_CLIENT_CONN) == -1)
     {
         std::cerr << "[error] server socket at port " << port << " failed to start listening!" << std::endl;
+        init_status = false;
         return;
     }
 
@@ -129,16 +141,19 @@ void tcp_server::accept_connection() {
 //---------------------------------------------------------------------------------------------------------------------
 tcp_server::~tcp_server(){
 
-    // Shutdown server
-    while(socket_handle != 0 && shutdown(socket_handle, SHUT_RDWR) < 0)
+    if (init_status)
     {
-        std::cout << "[info] shutting down server ... " << std::endl;
+        // Shutdown server
+        while(socket_handle != 0 && shutdown(socket_handle, SHUT_RDWR) < 0)
+        {
+            std::cout << "[info] shutting down server ... " << std::endl;
+        }
+
+        // Closing server socket handle
+        close(socket_handle);
+
+        std::cout << "[info] server terminated ... " << std::endl;
     }
-
-    // Closing server socket handle
-    close(socket_handle);
-
-    std::cout << "[info] server terminated ... " << std::endl;
 
     // Clear server and client socket handles
     socket_handle = 0;
