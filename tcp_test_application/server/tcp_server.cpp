@@ -10,6 +10,7 @@
 
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 
 // Reference : https://pubs.opengroup.org/onlinepubs/9699919799/
 // search for socket.h
@@ -18,6 +19,8 @@
 #define MAX_CLIENT_CONN 100
 
 using namespace std;
+
+static bool dead_connections = false;
 
 bool tcp_server::get_init_status()
 {
@@ -94,7 +97,6 @@ void tcp_server::accept_connection() {
 
     int n = poll(poll_fds_vec.data(), poll_fds_vec.size(), POLLING_TIMEOUT_MS);
 
-    //TODO: Check and drop for inactive connections
     for (int i = 0; i < poll_fds_vec.size(); i++) {
 
         // Lister to server socket for new connections
@@ -111,6 +113,21 @@ void tcp_server::accept_connection() {
                 if(client_handle == -1)
                 {
                     std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
+                    return;
+                }
+
+                // Ref: https://stackoverflow.com/questions/9604050/so-keepalive-and-poll
+                // Ref: https://tldp.org/HOWTO/TCP-Keepalive-HOWTO/usingkeepalive.html
+                // Configure client ports to be monitored
+                int opt = 1;
+                bool config_check = setsockopt(client_handle, SOL_SOCKET, SO_KEEPALIVE, &opt, sizeof(opt));
+                config_check += setsockopt(client_handle, SOL_TCP, TCP_KEEPIDLE, &opt, sizeof(opt));
+                config_check += setsockopt(client_handle, SOL_TCP, TCP_KEEPINTVL, &opt, sizeof(opt));
+                config_check += setsockopt(client_handle, SOL_TCP, TCP_KEEPCNT, &opt, sizeof(opt));
+
+                if( config_check != 0)
+                {
+                    std::cerr << "[error] client " <<  ntohs(client_address.sin_port) << " socket options configuration failed!" << std::endl;
                     return;
                 }
 
@@ -133,6 +150,21 @@ void tcp_server::accept_connection() {
             }
         }
 
+        if (poll_fds_vec[i].revents & POLLHUP)
+        {
+            // Close and update the connection handle
+            auto it = connections_map.find(poll_fds_vec[i].fd);
+            close(poll_fds_vec[i].fd);
+            poll_fds_vec[i].fd = -1;
+
+            // Set port connection to false
+            it->second.second = false;
+            std::cout << "Port " << it->second.first << " hungup ... " << std::endl;
+
+            // Flip dead connections flag on
+            dead_connections = true;
+        }
+
         // Listen to client sockets for incoming data
         else if (poll_fds_vec[i].revents & POLLIN)
         {
@@ -151,6 +183,44 @@ void tcp_server::accept_connection() {
                 send(poll_fds_vec[i].fd, ack.c_str(), strlen(ack.c_str()), MSG_WAITFORONE);
             }
         }
+    }
+
+    // Check and drop for inactive connections
+    if (poll_fds_vec.size() >= 2 && dead_connections)
+    {
+        std::cout << "=====  Server Cleanup In Progress  ======" << std::endl;
+        // Remove client handles of closed connections from poll fds
+        auto it = poll_fds_vec.begin();
+        while(it != poll_fds_vec.end())
+        {
+            if (it->fd != -1)
+            {
+                it++;
+                continue;
+            }
+
+            it = poll_fds_vec.erase(it);
+
+        }
+
+        // Remove closed connections from connections map
+        auto map_it = connections_map.begin();
+        while(map_it != connections_map.end())
+        {
+            if (map_it->second.second != false)
+            {
+                map_it++;
+                continue;
+            }
+
+            std::cout << "[info] clearing connection " << map_it->second.first << std::endl;
+            map_it = connections_map.erase(map_it);
+        }
+
+        std::cout << "=====  Server Cleanup Done ======" << std::endl;
+
+        // Flip dead connections flag off
+        dead_connections = false;
     }
 
 }
