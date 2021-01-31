@@ -81,6 +81,10 @@ tcp_server::tcp_server(int port) {
     struct pollfd poll_fd{socket_handle, POLLIN, 0};
     poll_fds_vec.push_back(std::move(poll_fd));
 
+    // Add server connection details to map
+    PortID portID = strcat(inet_ntoa(server_address.sin_addr), ":") + std::to_string(ntohs(server_address.sin_port));
+    connections_map[socket_handle] = std::make_pair<PortID, ConnectionStatus>(std::move(portID), true);
+
     std::cout << "[info] server initialization done successfully ... " << std::endl;
     std::cout << "[info] server socket port : " << port << std::endl;
 }
@@ -118,6 +122,14 @@ void tcp_server::accept_connection() {
 
                 std::cout << "[info] accepted connection from: " << client_ip << " port " << ntohs(client_address.sin_port) << std::endl;
 
+                // Add client details to map
+                if(connections_map.find(client_handle) == connections_map.end())
+                {
+
+                    PortID portID = strcat(inet_ntoa(client_address.sin_addr), ":") + std::to_string(ntohs(client_address.sin_port));
+                    connections_map[client_handle] = std::make_pair<PortID, ConnectionStatus>(std::move(portID), true);
+                    auto it = connections_map.find(client_handle);
+                }
             }
         }
 
