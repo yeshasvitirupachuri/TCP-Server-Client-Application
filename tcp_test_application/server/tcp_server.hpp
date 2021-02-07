@@ -6,22 +6,30 @@
 #include <poll.h>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 #define MTU_SIZE 1200
 
 class tcp_server {
 
     public:
+        using ptr = std::unique_ptr<tcp_server>;
 
         tcp_server(int port);
        ~tcp_server();
 
-        bool get_init_status();
         void accept_connection();
 
     private:
 
-        bool init_status;
+        struct Exp : public std::exception
+        {
+            std::string exp_msg;
+            Exp(std::string s) : exp_msg(s) {}
+            ~Exp() throw () {}
+            const char* what() const throw() {return exp_msg.c_str(); }
+        };
+
         int socket_handle{0}; // Zero initialization, server_handle is more meaningful name
         struct sockaddr_in server_address;
 

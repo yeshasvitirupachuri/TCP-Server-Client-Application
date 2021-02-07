@@ -22,27 +22,17 @@ using namespace std;
 
 static bool dead_connections = false;
 
-bool tcp_server::get_init_status()
-{
-    return this->init_status;
-}
-
 //---------------------------------------------------------------------------------------------------------------------
 tcp_server::tcp_server(int port) {
 
     std::cout << "[info] server initialization in progress ... " << std::endl;
-
-    // Set initialization default status
-    init_status = true;
 
     socket_handle = socket(AF_INET, SOCK_STREAM, 0);
 
     // Check status of server socket fd
     if (socket_handle == 0)
     {
-        std::cerr << "[error] server socket initialization failed!" << std::endl;
-        init_status = false;
-        return;
+        throw Exp("server socket initialization failed!");
     }
 
     // Socket fd configuration options buffer
@@ -52,9 +42,7 @@ tcp_server::tcp_server(int port) {
     // Configure socket fd with option SO_REUSEADDR (2)
     if( setsockopt(socket_handle, SOL_SOCKET, options[1], (char*)&options, sizeof(options)) == -1)
     {
-        std::cerr << "[error] server socket options configuration failed!" << std::endl;
-        init_status = false;
-        return;
+        throw Exp("server socket options configuration failed!");
     }
 
     // Set socket server address
@@ -67,17 +55,15 @@ tcp_server::tcp_server(int port) {
     // check for errors
     if( bind(socket_handle, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
     {
-        std::cerr << "[error] server socket binding failed to port " << port << std::endl;
-        init_status = false;
-        return;
+        close(socket_handle);
+        throw Exp("server socket binding failed to port " + std::to_string(port));
     }
 
     // Change backlog option to have multiple client connections
     if(listen(socket_handle, MAX_CLIENT_CONN) == -1)
     {
-        std::cerr << "[error] server socket at port " << port << " failed to start listening!" << std::endl;
-        init_status = false;
-        return;
+        close(socket_handle);
+        throw Exp("server socket at port " + std::to_string(port) + " failed to start listening!");
     }
 
     // Initialize poll fd with server socket
@@ -112,8 +98,9 @@ void tcp_server::accept_connection() {
                 // Check the client socket fd initialization for the connected client address
                 if(client_handle == -1)
                 {
-                    std::cerr << "[error] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
-                    return;
+                    close(client_handle);
+                    std::cerr << "[warning] client socket initialization failed for client address port " << client_address.sin_port << std::endl;
+                    continue;
                 }
 
                 // Ref: https://stackoverflow.com/questions/9604050/so-keepalive-and-poll
@@ -127,8 +114,9 @@ void tcp_server::accept_connection() {
 
                 if( config_check != 0)
                 {
+                    close(client_handle);
                     std::cerr << "[error] client " <<  ntohs(client_address.sin_port) << " socket options configuration failed!" << std::endl;
-                    return;
+                    continue;
                 }
 
                 // Initialize poll fd with client socket
@@ -189,6 +177,7 @@ void tcp_server::accept_connection() {
     if (poll_fds_vec.size() >= 2 && dead_connections)
     {
         std::cout << "=====  Server Cleanup In Progress  ======" << std::endl;
+
         // Remove client handles of closed connections from poll fds
         auto it = poll_fds_vec.begin();
         while(it != poll_fds_vec.end())
@@ -228,21 +217,18 @@ void tcp_server::accept_connection() {
 //---------------------------------------------------------------------------------------------------------------------
 tcp_server::~tcp_server(){
 
-    if (init_status)
+    // Close all socket handles
+    auto it = poll_fds_vec.end();
+    while(it <= poll_fds_vec.begin())
     {
-        // Close all socket handles
-        auto it = poll_fds_vec.end();
-        while(it != poll_fds_vec.begin())
-        {
-            close(it->fd);
-            it--;
-        }
-
-        // Closing server socket handle
-        close(socket_handle);
-
-        std::cout << "[info] server terminated ... " << std::endl;
+        close(it->fd);
+        it--;
     }
+
+    // Closing server socket handle
+    close(socket_handle);
+
+    std::cout << "[info] server terminated ... " << std::endl;
 
     // Clear server and client socket handles
     socket_handle = 0;
